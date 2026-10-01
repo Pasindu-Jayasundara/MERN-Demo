@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import ChatHeader from './components/ChatHeader.jsx'
+import Conversation from './components/Conversation.jsx'
 
 const initialMessages = [
   { id: 1, sender: 'maya', text: 'Hey! How’s the new project coming along?', time: '10:24 AM' },
@@ -32,62 +33,13 @@ function App() {
   return (
     <main className="app-shell">
       <section className="chat-card" aria-label="Chat with Maya">
-        <header className="topbar">
-          <Link className="brand" to="/" aria-label="Daylight home">
-            <span className="brand-mark" aria-hidden="true">✳</span>
-            <span>daylight</span>
-          </Link>
-          <div className="topbar-note"><span className="status-dot" /> Your little corner of the internet</div>
-          <button className="profile-button" aria-label="Your profile">J</button>
-        </header>
-
-        <section className="conversation">
-          <header className="conversation-header">
-            <div className="person">
-              <div className="avatar maya-avatar" aria-hidden="true">M<span className="online-indicator" /></div>
-              <div>
-                <h1>Maya Chen</h1>
-                <p><span className="online-copy">Online</span><span className="separator">·</span> Usually replies quickly</p>
-              </div>
-            </div>
-            <button className="more-button" aria-label="More conversation options">···</button>
-          </header>
-
-          <div className="message-area" aria-live="polite">
-            <div className="day-divider"><span /> <time>Today</time> <span /></div>
-            <div className="messages">
-              {messages.map((message) => {
-                const isMine = message.sender === 'you'
-                return (
-                  <article className={`message-row ${isMine ? 'mine' : ''}`} key={message.id}>
-                    {!isMine && <div className="avatar small maya-avatar" aria-hidden="true">M</div>}
-                    <div className="message-content">
-                      <div className="message-bubble">{message.text}</div>
-                      <time className="message-time">{message.time}</time>
-                    </div>
-                    {isMine && <div className="avatar small you-avatar" aria-label="You">J</div>}
-                  </article>
-                )
-              })}
-            </div>
-          </div>
-
-          <form className="composer" onSubmit={sendMessage}>
-            <label className="sr-only" htmlFor="message-input">Write a message</label>
-            <input
-              id="message-input"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Write a message..."
-              autoComplete="off"
-            />
-            <span className="composer-hint">Press Enter to send</span>
-            <button className="send-button" type="submit" aria-label="Send message" disabled={!draft.trim()}>
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 10h12m-5-5 5 5-5 5" /></svg>
-            </button>
-          </form>
-          <footer className="conversation-footer">Just you and Maya, keeping in touch <span>♡</span></footer>
-        </section>
+        <ChatHeader />
+        <Conversation
+          messages={messages}
+          draft={draft}
+          onDraftChange={setDraft}
+          onSend={sendMessage}
+        />
       </section>
     </main>
   )
