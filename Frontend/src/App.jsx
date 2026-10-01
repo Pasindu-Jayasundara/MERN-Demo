@@ -1,44 +1,94 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ChatHeader from './components/ChatHeader.jsx'
 import Conversation from './components/Conversation.jsx'
 
-const initialMessages = [
-  { id: 1, sender: 'maya', text: 'Hey! How’s the new project coming along?', time: '10:24 AM' },
-  { id: 2, sender: 'you', text: 'It’s going well! Just polishing the last few details.', time: '10:26 AM' },
-  { id: 3, sender: 'maya', text: 'Nice. I’d love to take a look when it’s ready ✨', time: '10:27 AM' },
-  { id: 4, sender: 'you', text: 'Absolutely — I’ll send it over this afternoon.', time: '10:29 AM' },
-]
-
 function App() {
-  const [messages, setMessages] = useState(initialMessages)
+  const selectedUser = new URLSearchParams(window.location.search).get('user')
+  const currentUser = selectedUser === 'maya' ? 'maya' : 'jordan'
+  const otherUser = currentUser === 'maya' ? 'jordan' : 'maya'
+  const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSending, setIsSending] = useState(false)
+  const [error, setError] = useState('')
 
-  function sendMessage(event) {
+  useEffect(() => {
+    let isActive = true
+
+    async function loadMessages() {
+      try {
+        const response = await fetch(`/api/messages?user=${currentUser}`)
+        if (!response.ok) throw new Error('Could not load messages.')
+        const data = await response.json()
+        if (isActive) setMessages(data)
+      } catch {
+        if (isActive) setError('Could not connect to the server. Check that the backend and database are running.')
+      } finally {
+        if (isActive) setIsLoading(false)
+      }
+    }
+
+    loadMessages()
+    const intervalId = window.setInterval(loadMessages, 5000)
+    return () => {
+      isActive = false
+      window.clearInterval(intervalId)
+    }
+  }, [currentUser])
+
+  async function sendMessage(event) {
     event.preventDefault()
     const text = draft.trim()
-    if (!text) return
+    if (!text || isSending) return
 
-    setMessages((current) => [
-      ...current,
-      {
-        id: Date.now(),
-        sender: 'you',
-        text,
-        time: new Intl.DateTimeFormat('en', { hour: 'numeric', minute: '2-digit' }).format(new Date()),
-      },
-    ])
-    setDraft('')
+    setIsSending(true)
+    setError('')
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, sender: currentUser }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || 'Could not send message.')
+      setMessages((current) => [...current, data])
+      setDraft('')
+    } catch (sendError) {
+      setError(sendError.message || 'Could not connect to the server.')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  async function deleteMessage(messageId) {
+    setError('')
+    try {
+      const response = await fetch(`/api/messages/${messageId}?sender=${currentUser}`, { method: 'DELETE' })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.message || 'Could not delete message.')
+      }
+      setMessages((current) => current.filter((message) => message.id !== messageId))
+    } catch (deleteError) {
+      setError(deleteError.message || 'Could not connect to the server.')
+    }
   }
 
   return (
     <main className="app-shell">
-      <section className="chat-card" aria-label="Chat with Maya">
-        <ChatHeader />
+      <section className="chat-card" aria-label={`Chat as ${currentUser}`}>
+        <ChatHeader currentUser={currentUser} />
         <Conversation
           messages={messages}
+          isLoading={isLoading}
+          error={error}
           draft={draft}
           onDraftChange={setDraft}
           onSend={sendMessage}
+          onDelete={deleteMessage}
+          isSending={isSending}
+          currentUser={currentUser}
+          otherUser={otherUser}
         />
       </section>
     </main>
@@ -46,3 +96,4 @@ function App() {
 }
 
 export default App
+

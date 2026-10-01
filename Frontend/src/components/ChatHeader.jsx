@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 
-function ChatHeader() {
+function ChatHeader({ currentUser }) {
   return (
     <header className="topbar">
       <Link className="brand" to="/" aria-label="Daylight home">
@@ -8,7 +8,9 @@ function ChatHeader() {
         <span>daylight</span>
       </Link>
       <div className="topbar-note"><span className="status-dot" /> Your little corner of the internet</div>
-      <button className="profile-button" aria-label="Your profile">J</button>
+      <button className="profile-button" aria-label={`Signed in as ${currentUser === 'maya' ? 'Maya' : 'Jordan'}`}>
+        {currentUser === 'maya' ? 'M' : 'J'}
+      </button>
     </header>
   )
 }
